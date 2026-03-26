@@ -1,0 +1,9 @@
+node_modules/
+llm_debug.log
+memory.json
+skills.json
+src/skills/dynamic/
+*.log
+.env
+.DS_Store
+Thumbs.db

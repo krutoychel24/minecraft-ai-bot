@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft AI Workspace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/cytoscape-edgehandles/cytoscape-edgehandles.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">
+                <span class="material-icons-round logo-icon">smart_toy</span>
+                <h2>Minecraft AI</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-tab="overview">
+                    <span class="material-icons-round">dashboard</span> Overview
+                </li>
+                <li data-tab="brain">
+                    <span class="material-icons-round">hub</span> Brain Map
+                </li>
+                <li data-tab="analytics">
+                    <span class="material-icons-round">analytics</span> Analytics
+                </li>
+                <li data-tab="memory">
+                    <span class="material-icons-round">psychology</span> Memory
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="connection-status" id="system-status">
+                    <span class="material-icons-round status-dot">circle</span>
+                    <span id="status-text">Offline</span>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 id="page-title">Overview</h1>
+                </div>
+                <div class="vitals">
+                    <div class="vital-chip">
+                        <span class="material-icons-round">favorite</span>
+                        <div class="vital-bar"><div class="vital-fill" id="health-bar" style="width:100%"></div></div>
+                        <span class="vital-num" id="health-val">20/20</span>
+                    </div>
+                    <div class="vital-chip">
+                        <span class="material-icons-round">restaurant</span>
+                        <div class="vital-bar"><div class="vital-fill food-fill" id="food-bar" style="width:100%"></div></div>
+                        <span class="vital-num" id="food-val">20/20</span>
+                    </div>
+                    <div class="vital-chip time-chip">
+                        <span class="material-icons-round">schedule</span>
+                        <span class="vital-num" id="time-val">Day</span>
+                    </div>
+                    <div class="vital-chip">
+                        <span class="material-icons-round">place</span>
+                        <span class="vital-num" id="coord-val">-- -- --</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB: OVERVIEW -->
+            <div id="tab-overview" class="tab-pane active">
+                <!-- LLM Status Banner -->
+                <div class="card llm-status-card" id="llm-status-card">
+                    <div class="llm-status-left">
+                        <span class="material-icons-round llm-icon">psychology</span>
+                        <div class="llm-info">
+                            <div class="llm-model-label">Active Model</div>
+                            <div class="llm-model-name" id="llm-model-name">—</div>
+                        </div>
+                    </div>
+                    <div class="llm-status-center">
+                        <div class="llm-thinking-dots" id="llm-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <div class="llm-detail" id="llm-detail">Waiting for connection...</div>
+                    </div>
+                    <div class="llm-status-badge-wrap">
+                        <span class="llm-badge" id="llm-badge">offline</span>
+                    </div>
+                </div>
+                <div class="grid-2col">
+                    <div class="stack">
+                        <div class="card map-card">
+                            <div class="card-title"><span class="material-icons-round">map</span> Spatial Awareness</div>
+                            <div class="map-wrap"><canvas id="minimap" width="400" height="400"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title"><span class="material-icons-round">terminal</span> Neurolink Override</div>
+                            <p class="card-sub">Inject commands directly into AI long-term memory.</p>
+                            <div class="input-row">
+                                <input type="text" id="override-input" placeholder="e.g. Build a shelter immediately...">
+                                <button id="override-btn" class="btn"><span class="material-icons-round">send</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card feed-card">
+                        <div class="card-title"><span class="material-icons-round">rss_feed</span> Live Activity Feed <span class="live-dot"></span></div>
+                        <div class="feed-list" id="logs"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- TAB: BRAIN -->
+            <div id="tab-brain" class="tab-pane">
+                <div class="card full-card brain-card">
+                    <div class="card-title"><span class="material-icons-round">hub</span> Cognitive Logic Graph</div>
+                    <div id="cy" class="cytoscape-container"></div>
+                </div>
+            </div>
+
+            <!-- TAB: ANALYTICS -->
+            <div id="tab-analytics" class="tab-pane">
+                <div class="grid-2col">
+                    <div class="card chart-card"><div class="card-title"><span class="material-icons-round">donut_large</span> Success vs Failure</div><div class="chart-wrap"><canvas id="successChart"></canvas></div></div>
+                    <div class="card chart-card"><div class="card-title"><span class="material-icons-round">bar_chart</span> Action Distribution</div><div class="chart-wrap"><canvas id="actionChart"></canvas></div></div>
+                </div>
+            </div>
+
+            <!-- TAB: MEMORY -->
+            <div id="tab-memory" class="tab-pane">
+                <div class="card full-card">
+                    <div class="card-title"><span class="material-icons-round">psychology</span> Long-Term Memory Archives</div>
+                    <p class="card-sub">Click the trash icon to permanently erase an entry from the AI's brain.</p>
+                    <ul class="memory-list" id="important-events"></ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
