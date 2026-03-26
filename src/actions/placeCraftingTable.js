@@ -1,7 +1,5 @@
 import { log } from '../utils/logger.js';
-import vec3Pkg from 'vec3';
-// Support both ES module and CommonJS exports for vec3
-const vec3 = vec3Pkg.vec3 || vec3Pkg;
+import { Vec3 } from 'vec3';
 
 export const placeCraftingTable = async (bot) => {
     log('action', 'Executing PLACE_CRAFTING_TABLE...');
@@ -21,6 +19,7 @@ export const placeCraftingTable = async (bot) => {
     // Find a solid block we can place it on
     const referenceBlock = bot.findBlock({
         matching: (block) => {
+            if (!block || !block.position) return false;
             if (block.name === 'air' || block.name === 'cave_air' || block.name === 'water' || block.name === 'lava') return false;
             if (block.boundingBox !== 'block') return false;
             
@@ -29,8 +28,9 @@ export const placeCraftingTable = async (bot) => {
             if (!blockAbove || (blockAbove.name !== 'air' && blockAbove.name !== 'cave_air')) return false;
 
             // Also ensure the bot isn't literally standing inside that block space
-            const dist = bot.entity.position.distanceTo(blockAbove.position);
-            return dist > 1.0; 
+            const botFeet = bot.entity.position.floored();
+            const botHead = botFeet.offset(0, 1, 0);
+            return !blockAbove.position.equals(botFeet) && !blockAbove.position.equals(botHead);
         },
         maxDistance: 4
     });
@@ -41,7 +41,7 @@ export const placeCraftingTable = async (bot) => {
     }
 
     try {
-        await bot.placeBlock(referenceBlock, vec3(0, 1, 0));
+        await bot.placeBlock(referenceBlock, new Vec3(0, 1, 0));
         log('action', 'Successfully placed crafting table.');
         return true;
     } catch (err) {

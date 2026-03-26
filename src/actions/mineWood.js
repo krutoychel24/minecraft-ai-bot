@@ -1,5 +1,7 @@
 // src/actions/mineWood.js
 import { log } from '../utils/logger.js';
+import pathfinderPkg from 'mineflayer-pathfinder';
+const { goals } = pathfinderPkg;
 
 // Keep track of unreachable blocks so we don't get stuck on them
 const badBlocks = [];
@@ -16,31 +18,44 @@ export const mineWood = async (bot) => {
         return 'Failed: No log types in registry.';
     }
 
-    const targetBlock = bot.findBlock({
-        matching: (block) => {
-            if (!block || !block.position || !matchingIds.includes(block.type)) return false;
-            // Check if it's in the badBlocks list
-            const isBad = badBlocks.some(b => b && b.x === block.position.x && b.y === block.position.y && b.z === block.position.z);
-            return !isBad;
-        },
-        maxDistance: 64
+    const blocks = bot.findBlocks({
+        matching: matchingIds,
+        maxDistance: 64,
+        count: 10
     });
 
-    if (!targetBlock) {
+    const goodPositions = blocks.filter(pos => !badBlocks.some(b => b && b.x === pos.x && b.y === pos.y && b.z === pos.z));
+
+    if (goodPositions.length === 0) {
         log('action', 'No wood found nearby! Must EXPLORE first.');
         return false;
     }
 
+    // find nearest
+    let targetBlockPos = goodPositions.sort((a, b) => bot.entity.position.distanceTo(a) - bot.entity.position.distanceTo(b))[0];
+    const targetBlock = bot.blockAt(targetBlockPos);
+
     log('action', `Found wood at ${targetBlock.position.x}, ${targetBlock.position.y}, ${targetBlock.position.z}. Collecting...`);
     
     try {
-        const collectReq = bot.collectBlock.collect(targetBlock);
+        const p = targetBlock.position;
+        await bot.pathfinder.goto(new goals.GoalGetToBlock(p.x, p.y, p.z));
         
-        const timeoutReq = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('TIMEOUT: Bot is stuck staring at a wall! Use EXPLORE to get unstuck!')), 12000);
-        });
+        await bot.lookAt(targetBlock.position.offset(0.5, 0.5, 0.5));
+        
+        const axes = bot.inventory.items().filter(item => item.name.includes('_axe'));
+        if (axes.length > 0) {
+            await bot.equip(axes[0], 'hand');
+        }
 
-        await Promise.race([collectReq, timeoutReq]);
+        await bot.dig(targetBlock);
+        
+        // Move into the dropped item to collect it
+        try {
+            await bot.pathfinder.goto(new goals.GoalBlock(p.x, p.y, p.z));
+        } catch (e) {
+            // It's ok if we can't step exactly inside the block, we might have picked it up anyway
+        }
 
         log('action', 'Successfully mined and collected wood.');
         return true;

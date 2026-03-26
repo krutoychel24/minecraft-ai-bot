@@ -61,6 +61,15 @@ export const determineNextAction = async (bot) => {
     const importantEventsStrs = memory.importantEvents.slice(-10)
         .map(e => `[${new Date(e.time).toISOString()}] ${e.event}`);
 
+    const woodTypes = ['oak_log', 'birch_log', 'spruce_log', 'jungle_log', 'acacia_log', 'dark_oak_log', 'oak_planks', 'birch_planks', 'spruce_planks', 'jungle_planks', 'acacia_planks', 'dark_oak_planks'];
+    let totalWoodCount = 0;
+    for (const [item, count] of inventoryArray) {
+        if (woodTypes.includes(item)) {
+            totalWoodCount += count;
+        }
+    }
+    const buildHousePrompt = totalWoodCount >= 32 ? '\n!!! YOU HAVE A LOT OF WOOD! YOUR NEW PRIMARY GOAL IS TO BUILD A HOUSE! Use ACTION: WRITE_SKILL to write a skill that builds a small house around you. !!!' : '';
+
     const reflectionPrompt = justFailed ? 
 `Your last action (${lastAction.action}) FAILED. 
 Read the RULES below to understand WHY it might have failed, and DO NOT repeat the exact same action without changing your state (e.g. use EXPLORE to move first).` : '';
@@ -72,9 +81,10 @@ Your core goal is to survive, explore, gather resources, craft, and build.
 
 CRITICAL RULES To Survive and Succeed:
 1. BARE HANDS: You DO NOT need tools to punch wood. If your inventory is empty, you can still use 'ACTION: MINE_WOOD'.
-2. COMBAT: If you take damage, you MUST use 'ACTION: ATTACK' to fight back, or 'ACTION: FLEE' to run away.
+2. COMBAT: If you take damage, you MUST use 'ACTION: ATTACK' to fight back, or 'ACTION: FLEE' to run away. Axes and Swords are GREAT weapons! DO NOT try to gather wood or craft while under attack!
 3. EXPLORATION: Only use 'ACTION: EXPLORE' if you are stuck, or if MINE_WOOD just failed because no trees are around.
 4. DO NOT HALLUCINATE: Only rely on the exact state shown below.
+5. AUTOMATIC MOVEMENT: Actions like MINE_WOOD will automatically walk to the target tree! You DO NOT need to invent movement actions like 'MOVE_TOWARDS_TREE'. Just use MINE_WOOD directly!
 
 Minecraft Survival Knowledge (How to play):
 - You MUST craft items step by step!
@@ -109,7 +119,8 @@ ${memory.previousActions.map(a => `[${new Date(a.time).toISOString()}] Action: $
 Here are your recent failures (DO NOT REPEAT FAILED ACTIONS):
 ${memory.failures.map(f => `[${new Date(f.time).toISOString()}] Action: ${f.action} failed. Reason: ${f.reason}`).join('\n') || 'None'}
 
-${treeFound ? '\n!!! OPPORTUNITY: A TREE IS VISIBLE ON YOUR RADAR! YOU SHOULD USE "ACTION: MINE_WOOD" IMMEDIATELY TO GATHER IT! !!!\n' : ''}
+${treeFound ? '\n!!! OPPORTUNITY: A TREE IS VISIBLE ON YOUR RADAR! YOU SHOULD USE "ACTION: MINE_WOOD" IMMEDIATELY TO GATHER IT! MINE_WOOD AUTOMATICALLY WALKS TO IT! !!!\n' : ''}
+${buildHousePrompt}
 
 Here are the actions you can currently perform:
 ${availableActions.join(', ')}

@@ -82,7 +82,12 @@ const mainLoop = async (bot) => {
                 log('main', `🛠️ AI is programming a new skill: ${skillName}`);
                 broadcastBrainNode('act_' + Date.now(), `CODE:\nWRITE_SKILL ${skillName}`, 'action');
                 success = registerDynamicSkill(skillName, code);
-                // If compilation succeeds, we consider the action of writing a success
+                // If compilation succeeds, execute it right away
+                if (success) {
+                    log('main', `⚡ Executing newly written skill: ${skillName}`);
+                    broadcastBrainNode('act_' + Date.now(), `ACTION:\n${skillName}`, 'action');
+                    success = await executeAction(bot, skillName);
+                }
             } else if (action && action !== 'WRITE_SKILL') {
                 // 3. Execute the action
                 broadcastBrainNode('act_' + Date.now(), `ACTION:\n${action}`, 'action');
